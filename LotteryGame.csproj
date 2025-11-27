@@ -7,4 +7,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="LotteryGame.Business\**" />
+    <Compile Remove="LotteryGame.Core\**" />
+    <Compile Remove="LotteryGame.Tests\**" />
+    <EmbeddedResource Remove="LotteryGame.Business\**" />
+    <EmbeddedResource Remove="LotteryGame.Core\**" />
+    <EmbeddedResource Remove="LotteryGame.Tests\**" />
+    <None Remove="LotteryGame.Business\**" />
+    <None Remove="LotteryGame.Core\**" />
+    <None Remove="LotteryGame.Tests\**" />
+  </ItemGroup>
+
 </Project>

@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36705.20 d17.14
+VisualStudioVersion = 17.14.36705.20
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame", "LotteryGame.csproj", "{084459C3-672B-4F21-A26B-5454DFA2A272}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Tests", "..\LotteryGame.Tests\LotteryGame.Tests.csproj", "{A18BC14A-0901-4D98-8B6E-06B92375E92F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Tests", "LotteryGame.Tests\LotteryGame.Tests.csproj", "{BBECF955-8A2E-5346-D78E-2D610A279C9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Core", "..\LotteryGame.Core\LotteryGame.Core.csproj", "{2D7F72A3-71B7-4F12-ADFD-C13740C03577}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Core", "LotteryGame.Core\LotteryGame.Core.csproj", "{52712401-2D0E-B76E-9A77-8877A292F967}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Business", "..\LotteryGame.Business\LotteryGame.Business.csproj", "{6DCD9AA2-AA25-43B0-AF84-8256F539244B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LotteryGame.Business", "LotteryGame.Business\LotteryGame.Business.csproj", "{D57A9D92-2852-78E8-8FC7-5112A65326DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,18 +21,18 @@ Global
 		{084459C3-672B-4F21-A26B-5454DFA2A272}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{084459C3-672B-4F21-A26B-5454DFA2A272}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{084459C3-672B-4F21-A26B-5454DFA2A272}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A18BC14A-0901-4D98-8B6E-06B92375E92F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A18BC14A-0901-4D98-8B6E-06B92375E92F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A18BC14A-0901-4D98-8B6E-06B92375E92F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A18BC14A-0901-4D98-8B6E-06B92375E92F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2D7F72A3-71B7-4F12-ADFD-C13740C03577}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D7F72A3-71B7-4F12-ADFD-C13740C03577}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D7F72A3-71B7-4F12-ADFD-C13740C03577}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D7F72A3-71B7-4F12-ADFD-C13740C03577}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6DCD9AA2-AA25-43B0-AF84-8256F539244B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6DCD9AA2-AA25-43B0-AF84-8256F539244B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6DCD9AA2-AA25-43B0-AF84-8256F539244B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6DCD9AA2-AA25-43B0-AF84-8256F539244B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBECF955-8A2E-5346-D78E-2D610A279C9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBECF955-8A2E-5346-D78E-2D610A279C9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBECF955-8A2E-5346-D78E-2D610A279C9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBECF955-8A2E-5346-D78E-2D610A279C9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52712401-2D0E-B76E-9A77-8877A292F967}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52712401-2D0E-B76E-9A77-8877A292F967}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52712401-2D0E-B76E-9A77-8877A292F967}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52712401-2D0E-B76E-9A77-8877A292F967}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D57A9D92-2852-78E8-8FC7-5112A65326DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D57A9D92-2852-78E8-8FC7-5112A65326DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D57A9D92-2852-78E8-8FC7-5112A65326DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D57A9D92-2852-78E8-8FC7-5112A65326DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
