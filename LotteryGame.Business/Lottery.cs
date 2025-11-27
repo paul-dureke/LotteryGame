@@ -55,5 +55,163 @@ namespace LotteryGame.Business
                 }
             }
         }
+
+        public LotteryDrawResult DrawPrizeWinners()
+        {
+            var winners = new List<WinningTicketResult>();
+
+            var allTickets = GetAllTickets();
+
+            if (allTickets.Count == 0)
+                throw new InvalidOperationException("No tickets have been purchased.");
+
+            var grandPrizeWinner = DrawGrandPrizeWinner(allTickets);
+            winners.Add(grandPrizeWinner);
+
+            RemoveTicketFromPool(grandPrizeWinner.PlayerNumber, grandPrizeWinner.TicketNumber);
+
+            //2nd Tier Winners (30% revenue for 10% of remaining tickets)
+            var secondTierWinners = DrawSecondTierWinners();
+            winners.AddRange(secondTierWinners);
+
+            //3rd Tier Winners (10%  revenue for 20% of remaining tickets)
+            var thirdTierWinners = DrawThirdTierWinners();
+            winners.AddRange(thirdTierWinners);
+
+            var totalPrizesAwarded = winners.Sum(w => w.PrizeAmount);
+            _houseProfit = _totalRevenue - totalPrizesAwarded;
+
+            return new LotteryDrawResult
+            {
+                Winners = winners,
+                HouseProfitFromRounding = _houseProfit - (_totalRevenue * 0.1m),
+                TotalPrizesAwarded = totalPrizesAwarded
+            };
+        }
+
+        private List<WinningTicketResult> DrawThirdTierWinners()
+        {
+            var winners = new List<WinningTicketResult>();
+            var remainingTickets = GetAllTickets();
+
+            if (remainingTickets.Count == 0)
+                return winners;
+
+            //20% of remaining tickets (minimum 1 if any tickets exist)
+            var numberOfWinners = Math.Max(1, (int)Math.Floor(remainingTickets.Count * 0.2));
+
+            //total 3rd tier prize pool (10% of total revenue)
+            var totalThirdTierPrize = _totalRevenue * 0.1m;
+
+            //Calculate prize per winner
+            var prizePerWinner = Math.Floor(totalThirdTierPrize / numberOfWinners * 100) / 100;
+
+            //Draw the winners
+            for (int i = 0; i < numberOfWinners && remainingTickets.Count > 0; i++)
+            {
+                var index = _random.Next(0, remainingTickets.Count);
+                var winner = remainingTickets[index];
+
+                var winningResult = new WinningTicketResult(
+                    PlayerNumber: winner.Player.Name ?? string.Empty,
+                    TicketNumber: winner.Ticket.Number,
+                    PrizeAmount: prizePerWinner);
+
+                winners.Add(winningResult);
+
+                //Remove winner befpre next iteration
+                RemoveTicketFromPool(winner.Player, winner.Ticket);
+                remainingTickets = GetAllTickets();
+            }
+
+            return winners;
+        }
+
+        private List<WinningTicketResult> DrawSecondTierWinners()
+        {
+            var winners = new List<WinningTicketResult>();
+            var remainingTickets = GetAllTickets();
+
+            if (remainingTickets.Count == 0)
+                return winners;
+
+            //10% of remaining tickets (minimum 1 if any tickets exist)
+            var numberOfWinners = Math.Max(1, (int)Math.Floor(remainingTickets.Count * 0.1));
+
+            //total 2nd tier prize pool (30% of total revenue)
+            var totalSecondTierPrize = _totalRevenue * 0.3m;
+
+            //Calculate prize per winner
+            var prizePerWinner = Math.Floor(totalSecondTierPrize / numberOfWinners * 100) / 100;
+
+            // Draw the winners
+            for (int i = 0; i < numberOfWinners && remainingTickets.Count > 0; i++)
+            {
+                var index = _random.Next(0, remainingTickets.Count);
+                var winner = remainingTickets[index];
+
+                var winningResult = new WinningTicketResult(
+                    PlayerNumber: winner.Player.Name ?? string.Empty,
+                    TicketNumber: winner.Ticket.Number,
+                    PrizeAmount: prizePerWinner);
+
+                winners.Add(winningResult);
+
+                //Remove winner before next iteration
+                RemoveTicketFromPool(winner.Player, winner.Ticket);
+                remainingTickets = GetAllTickets();
+            }
+
+            return winners;
+        }
+
+        private void RemoveTicketFromPool(string playerName, string ticketNumber)
+        {
+            var playerEntry = _allTickets.FirstOrDefault(kvp => kvp.Key.Name == playerName);
+            if (playerEntry.Key != null)
+            {
+                RemoveTicketFromPool(playerEntry.Key, new Ticket { Number = ticketNumber });
+            }
+        }
+
+        private void RemoveTicketFromPool(Player player, Ticket ticketToRemove)
+        {
+            if (_allTickets.TryGetValue(player, out var playerTickets))
+            {
+                lock (playerTickets)
+                {
+                    // Find and remove the specific ticket by number
+                    var ticketIndex = playerTickets.FindIndex(t => t.Number == ticketToRemove.Number);
+                    if (ticketIndex >= 0)
+                    {
+                        playerTickets.RemoveAt(ticketIndex);
+                    }
+
+                    if (playerTickets.Count == 0)
+                    {
+                        _allTickets.TryRemove(player, out _);
+                    }
+                }
+            }
+        }
+
+        private WinningTicketResult DrawGrandPrizeWinner(IReadOnlyList<(Player Player, Ticket Ticket)> allTickets)
+        {
+            var index = _random.Next(0, allTickets.Count);
+            var winner = allTickets[index];
+            var prizeAmount = _totalRevenue * 0.5m;
+
+            return new WinningTicketResult(
+                PlayerNumber: winner.Player.Name ?? string.Empty,
+                TicketNumber: winner.Ticket.Number,
+                PrizeAmount: prizeAmount);
+        }
+
+        private IReadOnlyList<(Player Player, Ticket Ticket)> GetAllTickets()
+        {
+            return _allTickets
+                .SelectMany(kvp => kvp.Value.Select(ticket => (kvp.Key, ticket)))
+                .ToList();
+        }
     }
 }
