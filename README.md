@@ -25,9 +25,9 @@ A console-based lottery game built with **Clean Architecture** principles, featu
 - .NET 8.0 SDK or later
 
 ### Run the Game
-git clone https://github.com/paul-dureke/LotteryGame.git
-cd LotteryGame 
-dotnet run
+- git clone https://github.com/paul-dureke/LotteryGame.git
+- cd LotteryGame 
+- dotnet run
 
 ### Run Tests
 dotnet test
