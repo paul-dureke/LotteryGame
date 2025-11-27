@@ -1,5 +1,7 @@
 ﻿using LotteryGame.Business;
 using LotteryGame.Core;
+using LotteryGame.Core.Configurations;
+using LotteryGame.Core.Interfaces;
 
 namespace LotteryGame.Tests
 {
@@ -150,7 +152,7 @@ namespace LotteryGame.Tests
             // Arrange
             var lottery = new Lottery();
             var players = CreatePlayers(12);
-            var ticketsPerPlayer = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 5, 3 }; // Mixed purchases
+            var ticketsPerPlayer = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 5, 3 }; 
 
             // Act
             for (int i = 0; i < players.Count; i++)
@@ -173,7 +175,7 @@ namespace LotteryGame.Tests
         [Fact]
         public void DrawPrizeWinners_GrandPrize_AlwaysFiftyPercentOfRevenue()
         {
-            // Arrange - Test with different revenue amounts
+            // Arrange
             var testScenarios = new[]
             {
                 new { Revenue = 100m, ExpectedGrandPrize = 50m },
@@ -185,19 +187,18 @@ namespace LotteryGame.Tests
             foreach (var scenario in testScenarios)
             {
                 var mockValues = new List<int>();
-                var ticketCount = (int)scenario.Revenue; // 1 ticket per dollar
+                var ticketCount = (int)scenario.Revenue;
 
-                // Generate ticket numbers
                 for (int i = 0; i < ticketCount; i++)
                 {
                     mockValues.Add(200 + i);
                 }
-                mockValues.Add(0); // Grand prize winner (first ticket)
+                mockValues.Add(0);
 
-                var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()));
+                var config = new LotteryConfig();
+                var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()), config);
                 var player = new Player { Name = "Player1", Balance = 1000 };
 
-                // Buy tickets to generate the target revenue
                 lottery.BuyTickets(player, ticketCost: 1, numberOfTickets: ticketCount);
 
                 // Act
@@ -223,10 +224,10 @@ namespace LotteryGame.Tests
             mockValues.Add(5);
             mockValues.Add(10);
 
-            var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()));
+            var config = new LotteryConfig();
+            var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()), config);
             var players = CreatePlayers(3);
 
-            // Each player buys 10 tickets
             foreach (var player in players)
             {
                 lottery.BuyTickets(player, ticketCost: 1, numberOfTickets: 10);
@@ -249,33 +250,29 @@ namespace LotteryGame.Tests
         [Fact]
         public void DrawPrizeWinners_ThirdTier_TenPercentOfRevenueSplit()
         {
-            // Arrange - 50 tickets total, revenue = $50
             var mockValues = new List<int>();
 
-            // 50 ticket numbers
             for (int i = 0; i < 50; i++)
             {
                 mockValues.Add(400 + i);
             }
 
-            mockValues.Add(0);
+            mockValues.Add(0); 
             for (int i = 0; i < 4; i++)
             {
-                mockValues.Add(i * 10); // Second tier winners
+                mockValues.Add(i * 10);
             }
 
-            // Remaining after second tier: 45 tickets, 20% of 45 = 9 third tier winners
-            // Need to account for decreasing ticket pool: 45, 44, 43, 42, 41, 40, 39, 38, 37
-            var thirdTierIndices = new[] { 0, 5, 10, 15, 20, 25, 30, 35, 36 }; // Last value must be < 37
+            var thirdTierIndices = new[] { 0, 5, 10, 15, 20, 25, 30, 35, 36 };
             foreach (var index in thirdTierIndices)
             {
                 mockValues.Add(index);
             }
 
-            var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()));
+            var config = new LotteryConfig();
+            var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()), config);
             var players = CreatePlayers(10);
 
-            // Each player buys 5 tickets
             foreach (var player in players)
             {
                 lottery.BuyTickets(player, ticketCost: 1, numberOfTickets: 5);
@@ -285,11 +282,8 @@ namespace LotteryGame.Tests
             var result = lottery.DrawPrizeWinners();
 
             // Assert
-            // Third tier pool: 10% of $50 = $5
-            // 9 winners should get $0.55 each (rounded down)
-            var expectedThirdTierPrize = Math.Floor(5m / 9 * 100) / 100; // $0.55
+            var expectedThirdTierPrize = Math.Floor(5m / 9 * 100) / 100;
 
-            // Skip grand + 4 second tier
             var thirdTierWinners = result.Winners.Skip(5).Take(9).ToList();
 
             foreach (var winner in thirdTierWinners)
@@ -303,7 +297,8 @@ namespace LotteryGame.Tests
         {
             // Arrange
             var mockValues = GenerateTicketNumbers(50).Concat(new[] { 0, 10, 20 }).ToArray();
-            var lottery = new Lottery(new MockRandomProvider(mockValues));
+            var config = new LotteryConfig();
+            var lottery = new Lottery(new MockRandomProvider(mockValues), config);
             var players = CreatePlayers(10);
 
             foreach (var player in players)
@@ -319,7 +314,6 @@ namespace LotteryGame.Tests
             var totalPrizes = result.Winners.Sum(w => w.PrizeAmount);
             var houseProfit = lottery.GetHouseProfit();
 
-            // Revenue should equal prizes + house profit
             Assert.Equal(totalRevenue, totalPrizes + houseProfit);
         }
 

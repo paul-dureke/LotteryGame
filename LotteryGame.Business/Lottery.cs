@@ -1,19 +1,35 @@
-﻿using LotteryGame.Core;
+﻿using LotteryGame.Business.Strategies;
+using LotteryGame.Core;
+using LotteryGame.Core.Configurations;
+using LotteryGame.Core.Interfaces;
+using LotteryGame.Core.Strategies;
 using System.Collections.Concurrent;
 
 namespace LotteryGame.Business
 {
-    public class Lottery
+    public class Lottery : ILottery
     {
         private readonly ConcurrentDictionary<Player, List<Ticket>> _allTickets = new();
         private readonly IRandomGenerator _random;
+        private readonly LotteryConfig _config;
+        private readonly Dictionary<string, IPrizeDistributionStrategy> _strategies;
+        private readonly ITicketGenerator? _ticketGenerator;
         private decimal _totalRevenue = 0;
         private decimal _houseProfit = 0;
 
-        public Lottery() : this(new RandomGenerator()) { }
-        public Lottery(IRandomGenerator random)
+        public Lottery() : this(new RandomGenerator(), new LotteryConfig()) { }
+        public Lottery(IRandomGenerator random, LotteryConfig config, ITicketGenerator? ticketGenerator = null)
         {
             _random = random ?? throw new ArgumentNullException(nameof(random));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _ticketGenerator = ticketGenerator;
+
+            _strategies = new Dictionary<string, IPrizeDistributionStrategy>
+            {
+                { _config.GrandPrize.TierName, new GrandPrizeStrategy() },
+                { _config.SecondTier.TierName, new PercentagePrizeStrategy() },
+                { _config.ThirdTier.TierName, new PercentagePrizeStrategy() }
+            };
         }
 
         public decimal GetTotalRevenue() => _totalRevenue;
@@ -48,10 +64,18 @@ namespace LotteryGame.Business
 
             lock (tickets)
             {
-                for (int i = 0; i < numberOfTickets; i++)
+                if (_ticketGenerator != null)
                 {
-                    var ticket = _random.Next(111, 999).ToString();
-                    tickets.Add(new Ticket { Number = ticket });
+                    var newTickets = _ticketGenerator.GenerateTickets(numberOfTickets, _config);
+                    tickets.AddRange(newTickets);
+                }
+                else
+                {
+                    for (int i = 0; i < numberOfTickets; i++)
+                    {
+                        var ticket = _random.Next(_config.MinTicketNumber, _config.MaxTicketNumber + 1).ToString();
+                        tickets.Add(new Ticket { Number = ticket });
+                    }
                 }
             }
         }
@@ -65,16 +89,27 @@ namespace LotteryGame.Business
             if (allTickets.Count == 0)
                 throw new InvalidOperationException("No tickets have been purchased.");
 
-            var grandPrizeWinner = DrawGrandPrizeWinner(allTickets);
-            winners.Add(grandPrizeWinner);
+            var grandPrizeWinners = _strategies[_config.GrandPrize.TierName]
+                .DrawWinners(allTickets, _totalRevenue, _config.GrandPrize, _random, RemoveTicketFromPool);
+            winners.AddRange(grandPrizeWinners);
 
             //2nd Tier Winners (30% revenue for 10% of remaining tickets)
-            var secondTierWinners = DrawSecondTierWinners();
-            winners.AddRange(secondTierWinners);
+            var remainingTicketsAfterGrand = GetAllTickets();
+            if (remainingTicketsAfterGrand.Any())
+            {
+                var secondTierWinners = _strategies[_config.SecondTier.TierName]
+                    .DrawWinners(remainingTicketsAfterGrand, _totalRevenue, _config.SecondTier, _random, RemoveTicketFromPool);
+                winners.AddRange(secondTierWinners);
+            }
 
             //3rd Tier Winners (10%  revenue for 20% of remaining tickets)
-            var thirdTierWinners = DrawThirdTierWinners();
-            winners.AddRange(thirdTierWinners);
+            var remainingTicketsAfterSecond = GetAllTickets();
+            if (remainingTicketsAfterSecond.Any())
+            {
+                var thirdTierWinners = _strategies[_config.ThirdTier.TierName]
+                    .DrawWinners(remainingTicketsAfterSecond, _totalRevenue, _config.ThirdTier, _random, RemoveTicketFromPool);
+                winners.AddRange(thirdTierWinners);
+            }
 
             var totalPrizesAwarded = winners.Sum(w => w.PrizeAmount);
             _houseProfit = _totalRevenue - totalPrizesAwarded;
@@ -82,94 +117,9 @@ namespace LotteryGame.Business
             return new LotteryDrawResult
             {
                 Winners = winners,
-                HouseProfitFromRounding = _houseProfit - (_totalRevenue * 0.1m),
+                HouseProfitFromRounding = _houseProfit - (_totalRevenue * _config.HousePercentage),
                 TotalPrizesAwarded = totalPrizesAwarded
             };
-        }
-
-        private List<WinningTicketResult> DrawThirdTierWinners()
-        {
-            var winners = new List<WinningTicketResult>();
-            var remainingTickets = GetAllTickets();
-
-            if (remainingTickets.Count == 0)
-                return winners;
-
-            //20% of remaining tickets (minimum 1 if any tickets exist)
-            var numberOfWinners = Math.Max(1, (int)Math.Floor(remainingTickets.Count * 0.2));
-
-            //total 3rd tier prize pool (10% of total revenue)
-            var totalThirdTierPrize = _totalRevenue * 0.1m;
-
-            //Calculate prize per winner
-            var prizePerWinner = Math.Floor(totalThirdTierPrize / numberOfWinners * 100) / 100;
-
-            //Draw the winners
-            for (int i = 0; i < numberOfWinners && remainingTickets.Count > 0; i++)
-            {
-                var index = _random.Next(0, remainingTickets.Count);
-                var winner = remainingTickets[index];
-
-                var winningResult = new WinningTicketResult(
-                    PlayerNumber: winner.Player.Name ?? string.Empty,
-                    TicketNumber: winner.Ticket.Number,
-                    PrizeAmount: prizePerWinner);
-
-                winners.Add(winningResult);
-
-                //Remove winner befpre next iteration
-                RemoveTicketFromPool(winner.Player, winner.Ticket);
-                remainingTickets = GetAllTickets();
-            }
-
-            return winners;
-        }
-
-        private List<WinningTicketResult> DrawSecondTierWinners()
-        {
-            var winners = new List<WinningTicketResult>();
-            var remainingTickets = GetAllTickets();
-
-            if (remainingTickets.Count == 0)
-                return winners;
-
-            //10% of remaining tickets (minimum 1 if any tickets exist)
-            var numberOfWinners = Math.Max(1, (int)Math.Floor(remainingTickets.Count * 0.1));
-
-            //total 2nd tier prize pool (30% of total revenue)
-            var totalSecondTierPrize = _totalRevenue * 0.3m;
-
-            //Calculate prize per winner
-            var prizePerWinner = Math.Floor(totalSecondTierPrize / numberOfWinners * 100) / 100;
-
-            // Draw the winners
-            for (int i = 0; i < numberOfWinners && remainingTickets.Count > 0; i++)
-            {
-                var index = _random.Next(0, remainingTickets.Count);
-                var winner = remainingTickets[index];
-
-                var winningResult = new WinningTicketResult(
-                    PlayerNumber: winner.Player.Name ?? string.Empty,
-                    TicketNumber: winner.Ticket.Number,
-                    PrizeAmount: prizePerWinner);
-
-                winners.Add(winningResult);
-
-                //Remove winner before next iteration
-                RemoveTicketFromPool(winner.Player, winner.Ticket);
-                remainingTickets = GetAllTickets();
-            }
-
-            return winners;
-        }
-
-        private void RemoveTicketFromPool(string playerName, string ticketNumber)
-        {
-            var playerEntry = _allTickets.FirstOrDefault(kvp => kvp.Key.Name == playerName);
-            if (playerEntry.Key != null)
-            {
-                RemoveTicketFromPool(playerEntry.Key, new Ticket { Number = ticketNumber });
-            }
         }
 
         private void RemoveTicketFromPool(Player player, Ticket ticketToRemove)
@@ -191,23 +141,6 @@ namespace LotteryGame.Business
                     }
                 }
             }
-        }
-
-        private WinningTicketResult DrawGrandPrizeWinner(IReadOnlyList<(Player Player, Ticket Ticket)> allTickets)
-        {
-            var index = _random.Next(0, allTickets.Count);
-            var winner = allTickets[index];
-            var prizeAmount = _totalRevenue * 0.5m;
-
-            var winningResult = new WinningTicketResult(
-                PlayerNumber: winner.Player.Name ?? string.Empty,
-                TicketNumber: winner.Ticket.Number,
-                PrizeAmount: prizeAmount);
-
-            // Remove the winning ticket from the pool
-            RemoveTicketFromPool(winner.Player, winner.Ticket);
-
-            return winningResult;
         }
 
         private IReadOnlyList<(Player Player, Ticket Ticket)> GetAllTickets()

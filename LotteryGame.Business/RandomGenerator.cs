@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using LotteryGame.Core.Interfaces;
 
 namespace LotteryGame.Business
 {
-    public interface IRandomGenerator
-    {
-        int Next(int minValue, int maxValue);
-    }
-
     public class RandomGenerator : IRandomGenerator
     {
         private readonly Random _random = new();
