@@ -19,4 +19,9 @@
     <None Remove="LotteryGame.Tests\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="LotteryGame.Business\LotteryGame.Business.csproj" />
+    <ProjectReference Include="LotteryGame.Core\LotteryGame.Core.csproj" />
+  </ItemGroup>
+
 </Project>

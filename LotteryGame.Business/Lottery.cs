@@ -68,8 +68,6 @@ namespace LotteryGame.Business
             var grandPrizeWinner = DrawGrandPrizeWinner(allTickets);
             winners.Add(grandPrizeWinner);
 
-            RemoveTicketFromPool(grandPrizeWinner.PlayerNumber, grandPrizeWinner.TicketNumber);
-
             //2nd Tier Winners (30% revenue for 10% of remaining tickets)
             var secondTierWinners = DrawSecondTierWinners();
             winners.AddRange(secondTierWinners);
@@ -201,10 +199,15 @@ namespace LotteryGame.Business
             var winner = allTickets[index];
             var prizeAmount = _totalRevenue * 0.5m;
 
-            return new WinningTicketResult(
+            var winningResult = new WinningTicketResult(
                 PlayerNumber: winner.Player.Name ?? string.Empty,
                 TicketNumber: winner.Ticket.Number,
                 PrizeAmount: prizeAmount);
+
+            // Remove the winning ticket from the pool
+            RemoveTicketFromPool(winner.Player, winner.Ticket);
+
+            return winningResult;
         }
 
         private IReadOnlyList<(Player Player, Ticket Ticket)> GetAllTickets()

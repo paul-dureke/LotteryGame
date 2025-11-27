@@ -212,19 +212,16 @@ namespace LotteryGame.Tests
         [Fact]
         public void DrawPrizeWinners_SecondTier_ThirtyPercentOfRevenueSplit()
         {
-            // Arrange - 30 tickets total, revenue = $30
             var mockValues = new List<int>();
 
-            // 30 ticket numbers
             for (int i = 0; i < 30; i++)
             {
                 mockValues.Add(300 + i);
             }
 
-            mockValues.Add(0); // Grand prize winner (removes 1 ticket)
-            // Remaining: 29 tickets, 10% of 29 = 2.9 → 2 second tier winners
-            mockValues.Add(5); // First second tier winner
-            mockValues.Add(10); // Second second tier winner
+            mockValues.Add(0);
+            mockValues.Add(5);
+            mockValues.Add(10);
 
             var lottery = new Lottery(new MockRandomProvider(mockValues.ToArray()));
             var players = CreatePlayers(3);
@@ -241,11 +238,9 @@ namespace LotteryGame.Tests
             // Assert
             var secondTierWinners = result.Winners.Skip(1).Where(w => w.PrizeAmount > 0).ToList();
 
-            // Second tier pool: 30% of $30 = $9
-            // 2 winners should get $4.50 each (rounded down to $4.50)
-            var expectedSecondTierPrize = Math.Floor(9m / 2 * 100) / 100; // $4.50
+            var expectedSecondTierPrize = Math.Floor(9m / 2 * 100) / 100;
 
-            foreach (var winner in secondTierWinners.Take(2)) // First 2 should be second tier
+            foreach (var winner in secondTierWinners.Take(2))
             {
                 Assert.Equal(expectedSecondTierPrize, winner.PrizeAmount);
             }
@@ -263,8 +258,7 @@ namespace LotteryGame.Tests
                 mockValues.Add(400 + i);
             }
 
-            mockValues.Add(0); // Grand prize winner (removes 1 ticket)
-                               // Remaining: 49 tickets, 10% of 49 = 4.9 → 4 second tier winners
+            mockValues.Add(0);
             for (int i = 0; i < 4; i++)
             {
                 mockValues.Add(i * 10); // Second tier winners
@@ -295,7 +289,8 @@ namespace LotteryGame.Tests
             // 9 winners should get $0.55 each (rounded down)
             var expectedThirdTierPrize = Math.Floor(5m / 9 * 100) / 100; // $0.55
 
-            var thirdTierWinners = result.Winners.Skip(5).Take(9).ToList(); // Skip grand + 4 second tier
+            // Skip grand + 4 second tier
+            var thirdTierWinners = result.Winners.Skip(5).Take(9).ToList();
 
             foreach (var winner in thirdTierWinners)
             {
